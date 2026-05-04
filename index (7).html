@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+  <meta name="theme-color" content="#FFD700"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="9W Gaming"/>
+  <title>9W Gaming</title>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{
+      width:100%;height:100%;overflow:hidden;background:#000;
+      filter:saturate(1.4);
+      -webkit-font-smoothing:antialiased;
+      font-family:'Segoe UI','Noto Sans Myanmar',sans-serif;
+    }
+    *{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+    button,a,[role="button"]{cursor:pointer;pointer-events:auto;-webkit-user-select:none;user-select:none}
+
+    /* ── Game Frame ── */
+    #game-frame{
+      position:fixed;top:46px;left:0;width:100%;height:calc(100% - 46px);
+      border:none;background:#000;-webkit-overflow-scrolling:touch;
+      will-change:transform;
+    }
+    #game-frame.push-shift{top:88px;height:calc(100% - 88px)}
+
+    /* ── Keyframes ── */
+    @keyframes bShimmer{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    @keyframes bPulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,215,0,.45)}50%{transform:scale(1.02);box-shadow:0 0 0 9px rgba(255,215,0,0)}}
+    @keyframes rippleAnim{to{transform:scale(4);opacity:0}}
+    @keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes sk{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+    @keyframes avatarPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,215,0,.6)}70%{box-shadow:0 0 0 6px rgba(255,215,0,0)}}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+    @keyframes bannerFlash{0%,100%{background:transparent}50%{background:rgba(255,50,50,.25)}}
+    @keyframes coinFloat{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-60px) scale(.5);opacity:0}}
+
+    /* online dot */
+    .nb-online-dot{
+      width:8px;height:8px;border-radius:50%;
+      background:#00e676;
+      position:absolute;bottom:1px;right:1px;
+      border:1.5px solid #000;
+      animation:blink 1.2s ease-in-out infinite;
+    }
+    .nb-avatar-wrap{position:relative;flex-shrink:0}
+
+    /* banner live flash */
+    #top-banner.live-flash #banner-btn{animation:bShimmer 3s ease infinite,bPulse 1.2s ease-in-out infinite,bannerFlash .4s ease 3}
+
+    /* coin particle container */
+    #coin-canvas{
+      position:fixed;top:0;left:0;width:100%;height:80px;
+      z-index:99992;pointer-events:none;overflow:hidden;
+    }
+    .coin{
+      position:absolute;font-size:16px;
+      animation:coinFloat 1.2s ease-out forwards;
+    }
+
+    /* ── Top Bot Banner ── */
+    #top-banner{position:fixed;top:0;left:0;width:100%;height:46px;z-index:99999;background:#000;overflow:hidden}
+    #banner-btn{
+      width:100%;height:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+      background:linear-gradient(90deg,#FFD700,#FF8C00,#FFF176,#FF8C00,#FFD700);
+      background-size:250% 250%;
+      animation:bShimmer 3s ease infinite,bPulse 1.2s ease-in-out infinite;
+      border:none;position:relative;overflow:hidden;
+    }
+    .banner-icon{font-size:18px}
+    #banner-text-wrap{color:#000;font-size:13px;font-weight:900;letter-spacing:.3px;text-align:center;transition:opacity .2s ease}
+    .ripple{
+      position:absolute;border-radius:50%;background:rgba(255,255,255,.35);
+      transform:scale(0);animation:rippleAnim .55s linear;pointer-events:none;
+    }
+
+    /* ── Custom Download Banner (Cover Strip) ── */
+    #cover-strip{
+      position:fixed;top:46px;left:0;right:0;height:56px;
+      background:linear-gradient(135deg,#1a0a00,#2d1200);
+      border-bottom:1.5px solid #FF8C00;
+      z-index:99993;display:flex;align-items:center;justify-content:space-between;
+      padding:0 14px;gap:10px;cursor:pointer;overflow:hidden;
+    }
+    #cover-strip::before{
+      content:'';position:absolute;inset:0;
+      background:linear-gradient(90deg,transparent,rgba(255,140,0,.08),transparent);
+      background-size:250% 250%;animation:bShimmer 3s ease infinite;
+    }
+    .dl-text{color:#fff;font-size:13px;font-weight:700;line-height:1.4;flex:1;position:relative}
+    .dl-text span{color:#FFD700;font-weight:900}
+    .dl-btn{
+      background:linear-gradient(135deg,#FFD700,#FF8C00);
+      color:#000;font-size:11px;font-weight:900;border:none;border-radius:8px;
+      padding:7px 12px;white-space:nowrap;position:relative;flex-shrink:0;
+      box-shadow:0 0 10px rgba(255,215,0,.4);
+    }
+
+    /* ── Chat Bubble (Option 1) ── */
+    #noti-bubble{
+      position:fixed;top:112px;right:10px;z-index:99998;
+      display:flex;align-items:flex-end;gap:7px;
+      opacity:0;transform:translateX(250px);
+      transition:transform .5s cubic-bezier(.34,1.56,.64,1),opacity .4s ease;
+      cursor:pointer;
+    }
+    #noti-bubble.show{opacity:1;transform:translateX(0)}
+    .nb-avatar{
+      width:36px;height:36px;border-radius:50%;
+      background:linear-gradient(135deg,#FFD700,#FF8C00);
+      display:flex;align-items:center;justify-content:center;
+      font-size:18px;flex-shrink:0;
+      animation:avatarPulse 1.5s ease infinite;
+      box-shadow:0 0 0 2px #000;
+    }
+    .nb-card{
+      background:#1c1c1c;
+      border:1.5px solid #FFD700;
+      border-radius:16px 16px 4px 16px;
+      padding:9px 28px 9px 11px;
+      max-width:175px;
+      box-shadow:0 8px 24px rgba(0,0,0,.5),0 0 12px rgba(255,215,0,.15);
+      position:relative;
+    }
+    /* bubble tail */
+    .nb-card::after{
+      content:'';position:absolute;bottom:0;right:-8px;
+      width:0;height:0;
+      border-left:8px solid #FFD700;
+      border-bottom:8px solid transparent;
+    }
+    .nb-card::before{
+      content:'';position:absolute;bottom:1px;right:-6px;
+      width:0;height:0;
+      border-left:7px solid #1c1c1c;
+      border-bottom:7px solid transparent;
+      z-index:1;
+    }
+    .nb-name{color:#FFD700;font-size:10px;font-weight:800;margin-bottom:3px}
+    .nb-body{color:#f0f0f0;font-size:12px;line-height:1.55}
+    #noti-close{
+      position:absolute;top:5px;right:7px;color:#555;font-size:12px;
+      cursor:pointer;z-index:2;line-height:1;
+    }
+    #noti-close:active{color:#FFD700}
+
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes badgeBounce{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-10px) rotate(5deg)}}
+
+    /* ── Notice Modal ── */
+    #visit-modal{
+      display:none;position:fixed;inset:0;z-index:999998;
+      background:rgba(0,0,0,.88);
+      align-items:center;justify-content:center;padding:20px;
+    }
+    #visit-modal.show{display:flex;animation:fadeInUp .4s ease}
+    .vm-card{
+      background:linear-gradient(160deg,#1a0e00,#0d0d0d);
+      border:2px solid #FFD700;border-radius:22px;
+      padding:28px 22px 22px;max-width:340px;width:100%;
+      text-align:center;position:relative;
+      box-shadow:0 0 40px rgba(255,215,0,.2);
+    }
+    .vm-glow{position:absolute;top:-1px;left:50%;transform:translateX(-50%);width:60%;height:3px;background:linear-gradient(90deg,transparent,#FFD700,transparent);border-radius:2px}
+    .vm-badge{font-size:48px;margin-bottom:10px;display:block;animation:badgeBounce 1.2s ease-in-out infinite}
+    .vm-title{color:#FFD700;font-size:20px;font-weight:900;margin-bottom:6px}
+    .vm-sub{color:#ccc;font-size:13px;line-height:1.7;margin-bottom:18px}
+    .vm-sub b{color:#FFD700}
+    .vm-btn{
+      display:block;width:100%;
+      background:linear-gradient(135deg,#FFD700,#FF8C00);
+      color:#000;font-size:15px;font-weight:900;
+      border:none;border-radius:12px;padding:14px;cursor:pointer;
+      box-shadow:0 4px 20px rgba(255,140,0,.4);margin-bottom:10px;
+    }
+    .vm-skip{color:#555;font-size:12px;cursor:pointer;display:block}
+    .vm-skip:active{color:#FFD700}
+
+    /* ── PWA Install Bar ── */
+    #install-bar{
+      position:fixed;bottom:0;left:0;right:0;z-index:99997;
+      background:#111;border-top:1.5px solid #FFD700;
+      padding:10px 16px;display:flex;align-items:center;gap:10px;
+      transform:translateY(100%);transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+    }
+    #install-bar.show{transform:translateY(0)}
+    .ib-text{color:#fff;font-size:12px;line-height:1.5;flex:1}
+    .ib-text span{color:#FFD700;font-weight:800}
+    .ib-btn{
+      background:linear-gradient(135deg,#FFD700,#FF8C00);
+      color:#000;font-size:12px;font-weight:900;
+      border:none;border-radius:8px;padding:8px 14px;white-space:nowrap;cursor:pointer;
+    }
+    .ib-close{color:#555;font-size:18px;cursor:pointer;padding:0 4px}
+
+    /* ── iOS Modal ── */
+    #ios-modal{display:none;position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,.85);align-items:flex-end;justify-content:center}
+    #ios-modal.show{display:flex}
+    .ios-card{background:#1a1a1a;border-radius:20px 20px 0 0;border:1.5px solid #FFD700;padding:24px 20px 36px;text-align:center;max-width:400px;width:100%}
+    .ios-card h3{color:#FFD700;font-size:16px;margin-bottom:12px}
+    .ios-card p{color:#ccc;font-size:13px;line-height:1.9}
+    .ios-close{margin-top:18px;display:inline-block;background:#222;color:#fff;border:1px solid #333;border-radius:8px;padding:8px 24px;font-size:13px;cursor:pointer}
+
+    /* ── Push Bar ── */
+    #push-bar{
+      position:fixed;top:46px;left:0;right:0;z-index:99996;
+      background:#1a1a1a;border-bottom:1px solid #2a2a2a;
+      padding:8px 14px;display:flex;align-items:center;gap:10px;
+      transform:translateY(-100%);transition:transform .35s ease;
+    }
+    #push-bar.show{transform:translateY(0)}
+    .pb-text{color:#ccc;font-size:11px;flex:1;line-height:1.5}
+    .pb-allow{background:#FFD700;color:#000;font-size:11px;font-weight:800;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+    .pb-deny{color:#555;font-size:18px;cursor:pointer;padding:0 4px}
+
+    /* ── Timeout Overlay ── */
+    #timeout-overlay{display:none;position:fixed;inset:0;z-index:99995;background:rgba(0,0,0,.92);flex-direction:column;align-items:center;justify-content:center;gap:16px}
+    #timeout-overlay.show{display:flex}
+    .to-icon{font-size:48px}.to-title{color:#FFD700;font-size:18px;font-weight:800}.to-sub{color:#777;font-size:13px}
+    .to-btn{margin-top:8px;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#000;font-size:14px;font-weight:900;border:none;border-radius:10px;padding:12px 32px;cursor:pointer}
+
+    /* ── Splash ── */
+    #splash{position:fixed;inset:0;z-index:99994;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity .5s ease}
+    #splash.fade{opacity:0;pointer-events:none}
+    .sp-logo{font-size:64px;font-weight:900;letter-spacing:-3px;background:linear-gradient(135deg,#FFD700,#FF8C00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .sp-sub{color:#444;font-size:11px;letter-spacing:3px;text-transform:uppercase}
+    .sp-pct{color:#FFD700;font-size:13px;font-weight:700;text-align:center}
+    .sk{width:220px;height:5px;background:#1e1e1e;border-radius:4px;overflow:hidden;position:relative}
+    .sk::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,#FFD70033,transparent);animation:sk 1.2s infinite}
+  </style>
+</head>
+<body>
+
+  <!-- Splash -->
+  <div id="splash">
+    <div class="sp-logo">9W</div>
+    <div class="sp-sub">Loading game…</div>
+    <div class="sk"></div>
+    <div class="sp-pct" id="sp-pct">0%</div>
+  </div>
+
+  <!-- Timeout -->
+  <div id="timeout-overlay">
+    <div class="to-icon">⚠️</div>
+    <div class="to-title">ချိတ်ဆက်မှု နှေးနေသည်</div>
+    <div class="to-sub">Internet စစ်ဆေးပြီး ပြန်ကြိုးစားပါ</div>
+    <button class="to-btn" onclick="reloadGame()">🔄 ပြန်လည် ကြိုးစားမည်</button>
+  </div>
+
+  <!-- Push Bar -->
+  <div id="push-bar">
+    <div class="pb-text">🔔 <strong style="color:#FFD700">Promotion</strong> အသစ်တွေ အမြန် သိချင်ရင် Notification ဖွင့်ပါ</div>
+    <button class="pb-allow" onclick="requestPush()">ဖွင့်မည်</button>
+    <span class="pb-deny" onclick="dismissPushBar()">✕</span>
+  </div>
+
+  <!-- Top Banner -->
+  <div id="top-banner">
+    <div id="banner-btn" onclick="openBot(event)">
+      <span class="banner-icon">🤖</span>
+      <span id="banner-text-wrap">Bot နဲ့ Chat ဖွင့်ရန် နှိပ်ပါ 👆</span>
+    </div>
+  </div>
+
+  <!-- Custom Download Banner -->
+  <div id="cover-strip" onclick="haptic();window.open('https://tinyurl.com/DNDV6MainBUCHHH','_blank')">
+    <div class="dl-text">
+      📲 <span>ဆော့ဝဲလ် ယခုဘဲ ဒေါင်းလုပ်ပါ!</span><br>
+      <span style="color:#ccc;font-size:11px;font-weight:400">အကောင်းဆုံး Gaming Experience</span>
+    </div>
+    <button class="dl-btn">⬇️ Download</button>
+  </div>
+
+  <!-- Game iframe -->
+  <iframe id="game-frame" src="about:blank"
+    allow="autoplay;fullscreen;payment"
+    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-top-navigation">
+  </iframe>
+
+  <!-- Coin Particles -->
+  <div id="coin-canvas"></div>
+
+  <!-- Chat Bubble (Option 1) -->
+  <div id="noti-bubble" onclick="openBot()">
+    <div class="nb-card">
+      <span id="noti-close" onclick="closeBubble(event)">✕</span>
+      <div class="nb-name">🤖 9W Bot</div>
+      <div class="nb-body" id="nb-text"></div>
+    </div>
+    <div class="nb-avatar-wrap">
+      <div class="nb-avatar">🤖</div>
+      <span class="nb-online-dot"></span>
+    </div>
+  </div>
+
+  <!-- Notice Modal -->
+  <div id="visit-modal">
+    <div class="vm-card">
+      <div class="vm-glow"></div>
+      <span class="vm-badge">🎁</span>
+      <div class="vm-title">ကြိုဆိုပါသည်!</div>
+      <div class="vm-sub">
+        <b>9W Gaming</b> မှ<br>
+        <b>အကောင့်ဖွင့် ဘောနပ်</b> ရရှိရန်<br>
+        ယခုပင် အကောင့်ဖွင့်လိုက်ပါ 🎰
+      </div>
+      <button class="vm-btn" onclick="closeModal()">🚀 ယခုပင် အကောင့်ဖွင့်မည်</button>
+      <span class="vm-skip" onclick="closeModal()">နောက်မှ ဖွင့်မည်</span>
+    </div>
+  </div>
+
+  <!-- PWA Install Bar -->
+  <div id="install-bar">
+    <div class="ib-text"><span>📲 Home Screen</span> မှာ ထည့်မလား?<br>App လိုမျိုး အမြန် ဖွင့်နိုင်မည်</div>
+    <button class="ib-btn" onclick="triggerInstall()">ထည့်မည်</button>
+    <span class="ib-close" onclick="dismissInstall()">✕</span>
+  </div>
+
+  <!-- iOS Modal -->
+  <div id="ios-modal" onclick="closeIosModal()">
+    <div class="ios-card" onclick="event.stopPropagation()">
+      <h3>📲 Home Screen မှာ ထည့်နည်း</h3>
+      <p>1️⃣ Safari ရဲ့ <strong style="color:#FFD700">Share</strong> button နှိပ်ပါ<br>
+         2️⃣ <strong style="color:#FFD700">"Add to Home Screen"</strong> ကို ရွေးပါ<br>
+         3️⃣ <strong style="color:#FFD700">"Add"</strong> နှိပ်ရင် ပြီးပါပြီ ✅</p>
+      <div class="ios-close" onclick="closeIosModal()">နားလည်ပြီ</div>
+    </div>
+  </div>
+
+<script>
+  /* ── Config ── */
+  const GAME_URL = 'https://9ww.shop/?dl=3s39o9';
+  const BOT_URL  = 'https://ccorryxx-bot.github.io/MiNiMax---to-Cloud-2.5/';
+
+  /* ── Bubble Messages ── */
+  const BUBBLE_MSGS = [
+    'အရှောင်မှာ လိုအပ်တာ ရှိလား? 👀',
+    'ဂိမ်းကစားနည်း သိချင်လား? 🎮',
+    'Promotion တွေ ဘာရှိလဲ မေးလိုက် 📢',
+    'Bot ကို ၂၄ နာရီ မေးလို့ရတယ် 🤖',
+    'အကောင့် ပြဿနာ ရှိလား? 💬',
+    '🔥 Lucky Hour — ယခုပဲ ဝင်ကစားပါ!',
+  ];
+
+  /* ── Live Activity Feed data ── */
+  const NAMES   = ['iD- 189***','iD- 442***','iD- 773***','iD- 521***','iD- 308***','iD- 654***','iD- 235***','iD- 917***'];
+  const GAMES   = ['JILI Slots','PG Slots','PP Slots','Jackpot Fishing','Gates of Olympus','Mahjong Ways'];
+  const AMOUNTS = ['50,000','120,000','85,000','200,000','35,000','500,000','75,000','300,000'];
+
+  /* ── State ── */
+  let msgIdx=0, bubbleClosed=false, cycleTimer=null;
+  let deferredPrompt=null, loaded=false, loadTimer=null;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  /* ── Countdown helper (rolling per-hour) ── */
+  function getCountdown(){
+    const now=new Date();
+    const rem=3600-((now.getMinutes()*60)+now.getSeconds());
+    const m=String(Math.floor(rem/60)).padStart(2,'0');
+    const s=String(rem%60).padStart(2,'0');
+    return `${m}:${s}`;
+  }
+
+  /* ── Random activity text ── */
+  function randomActivity(){
+    const name=NAMES[Math.floor(Math.random()*NAMES.length)];
+    const game=GAMES[Math.floor(Math.random()*GAMES.length)];
+    const amt =AMOUNTS[Math.floor(Math.random()*AMOUNTS.length)];
+    return `🔴 ${name} — ${game} မှ ${amt}ကျပ် အနိုင်ရသည် 🎉`;
+  }
+
+  /* ── Banner text: set with fade transition ── */
+  const STATIC_TEXT = 'Bot နဲ့ Chat ရန် နှိပ်ပါ 👆';
+  function setBanner(text){
+    const el=document.getElementById('banner-text-wrap');
+    if(!el) return;
+    el.style.opacity='0';
+    setTimeout(()=>{ el.textContent=text; el.style.opacity='1'; },200);
+  }
+
+  /* ── Main banner loop ──
+     Load+3s → Activity(2s) → TimeLock(2s) → Static → 5min → repeat
+  ── */
+  function startBannerLoop(){
+    // Step 1: Live Activity (4s)
+    setBanner(randomActivity());
+    setTimeout(()=>{
+      // Step 2: Time Lock (4s)
+      setBanner(`⏰ Lucky Hour: ${getCountdown()} — ကံကောင်းချိန် ကျန်တော့သည်!`);
+      setTimeout(()=>{
+        // Step 3: Static for 5 minutes
+        setBanner(STATIC_TEXT);
+        setTimeout(startBannerLoop, 120_000);
+      },4000);
+    },4000);
+  }
+
+  /* ── Inline Manifest ── */
+  const mBlob=new Blob([JSON.stringify({
+    name:'9W Gaming',short_name:'9W',start_url:location.href,
+    display:'standalone',orientation:'portrait',
+    background_color:'#000000',theme_color:'#FFD700',
+    icons:[{src:'https://9ww.shop/favicon.ico',sizes:'any',type:'image/x-icon'}]
+  })],{type:'application/json'});
+  const mLink=document.createElement('link');
+  mLink.rel='manifest';mLink.href=URL.createObjectURL(mBlob);
+  document.head.appendChild(mLink);
+
+  /* ── Inline SW ── */
+  const swCode=`const CACHE='9w-v2';
+  self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['/'])));self.skipWaiting()});
+  self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))));self.clients.claim()});
+  self.addEventListener('fetch',e=>{if(new URL(e.request.url).origin===location.origin)e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)))});
+  self.addEventListener('push',e=>{const d=e.data?e.data.json():{title:'9W',body:'Promotion အသစ်! 🎰'};e.waitUntil(self.registration.showNotification(d.title||'9W Gaming',{body:d.body,icon:'https://9ww.shop/favicon.ico',vibrate:[100,50,100]}))});`;
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode],{type:'application/javascript'}))).catch(()=>{});
+  }
+
+  /* ── Orientation lock ── */
+  try{screen.orientation?.lock('portrait').catch(()=>{})}catch(e){}
+
+  /* ── Haptic feedback ── */
+  function haptic(){ try{ navigator.vibrate(40) }catch(e){} }
+
+  /* ── Gold coin particles ── */
+  function spawnCoins(){
+    const canvas=document.getElementById('coin-canvas');
+    const coins=['🪙','💰','✨','⭐'];
+    for(let i=0;i<6;i++){
+      setTimeout(()=>{
+        const c=document.createElement('span');
+        c.className='coin';
+        c.textContent=coins[Math.floor(Math.random()*coins.length)];
+        c.style.left=Math.random()*90+'%';
+        c.style.top='46px';
+        c.style.animationDelay=(Math.random()*.3)+'s';
+        canvas.appendChild(c);
+        c.addEventListener('animationend',()=>c.remove());
+      },i*120);
+    }
+  }
+
+  /* ── Banner flash red tint ── */
+  function flashBanner(){
+    const b=document.getElementById('top-banner');
+    b.classList.add('live-flash');
+    setTimeout(()=>b.classList.remove('live-flash'),1300);
+  }
+
+  /* ── Banner loop ── */
+  function startBannerLoop(){
+    // Step 1: Live Activity (5s) + flash + coins
+    setBanner(randomActivity());
+    flashBanner();
+    spawnCoins();
+    setTimeout(()=>{
+      // Step 2: Time Lock (4s)
+      setBanner(`⏰ Lucky Hour: ${getCountdown()} — ကံကောင်းချိန် ကျန်တော့သည်!`);
+      setTimeout(()=>{
+        // Step 3: Static 2min
+        setBanner(STATIC_TEXT);
+        setTimeout(startBannerLoop,120_000);
+      },4000);
+    },5000);
+  }
+
+  /* ── Notice Modal ── */
+  function showModal(){ document.getElementById('visit-modal').classList.add('show') }
+  function closeModal(){ haptic(); document.getElementById('visit-modal').classList.remove('show') }
+
+  /* ── First Visit Modal (every 1hr) - REMOVED ── */
+
+  /* ── PWA Install ── */
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault();deferredPrompt=e;
+    setTimeout(()=>document.getElementById('install-bar').classList.add('show'),5000);
+  });
+  function triggerInstall(){
+    if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>deferredPrompt=null);dismissInstall();}
+    else if(isIOS){document.getElementById('ios-modal').classList.add('show');dismissInstall();}
+  }
+  function dismissInstall(){document.getElementById('install-bar').classList.remove('show')}
+  function closeIosModal(){document.getElementById('ios-modal').classList.remove('show')}
+
+  /* ── Push Notification ── */
+  function showPushBar(){
+    if(!('Notification' in window)||Notification.permission!=='default') return;
+    setTimeout(()=>{
+      document.getElementById('push-bar').classList.add('show');
+      document.getElementById('game-frame').classList.add('push-shift');
+    },7000);
+  }
+  function requestPush(){
+    Notification.requestPermission().then(perm=>{
+      dismissPushBar();
+      if(perm==='granted') new Notification('9W Gaming 🎰',{body:'Notification ဖွင့်ပြီးပါပြီ! 🔔',icon:'https://9ww.shop/favicon.ico'});
+    });
+  }
+  function dismissPushBar(){
+    document.getElementById('push-bar').classList.remove('show');
+    document.getElementById('game-frame').classList.remove('push-shift');
+  }
+
+  /* ── Loading Timeout ── */
+  function startTimer(){
+    clearTimeout(loadTimer);
+    loadTimer=setTimeout(()=>{if(!loaded)document.getElementById('timeout-overlay').classList.add('show')},12000);
+  }
+  function reloadGame(){
+    loaded=false;
+    document.getElementById('timeout-overlay').classList.remove('show');
+    const s=document.getElementById('splash');
+    if(s){s.style.opacity='1';s.style.pointerEvents='auto';}
+    const p=document.getElementById('sp-pct');if(p)p.textContent='0%';
+    document.getElementById('game-frame').src=GAME_URL;
+    fakeProgress();startTimer();
+  }
+
+  /* ── Splash ── */
+  function hideSplash(){
+    if(loaded)return;loaded=true;clearTimeout(loadTimer);
+    const s=document.getElementById('splash');if(!s)return;
+    s.classList.add('fade');
+    setTimeout(()=>s.remove(),600);
+    showPushBar();
+    // Show notice modal after 2s
+    setTimeout(showModal, 2000);
+    // Start banner loop after 5s
+    setTimeout(startBannerLoop, 5000);
+    // Start bubble 3s after load
+    setTimeout(showBubble,3000);
+  }
+  function fakeProgress(){
+    const el=document.getElementById('sp-pct');if(!el)return;
+    let n=0;
+    const t=setInterval(()=>{
+      if(loaded||n>=90){clearInterval(t);return;}
+      n=Math.min(n+Math.random()*9,90);
+      el.textContent=Math.round(n)+'%';
+    },320);
+  }
+
+  window.addEventListener('DOMContentLoaded',()=>{
+    fakeProgress();startTimer();
+    const frame=document.getElementById('game-frame');
+    frame.addEventListener('load',()=>{
+      if(frame.src==='about:blank'||frame.src==='')return;
+      const el=document.getElementById('sp-pct');if(el)el.textContent='100%';
+      setTimeout(hideSplash,350);
+    });
+    frame.src=GAME_URL;
+  });
+  setTimeout(hideSplash,15000);
+
+  /* ── Ripple ── */
+  function ripple(el,e){
+    const r=document.createElement('span'),rect=el.getBoundingClientRect();
+    const size=Math.max(rect.width,rect.height);
+    r.className='ripple';
+    r.style.cssText=`width:${size}px;height:${size}px;left:${e.clientX-rect.left-size/2}px;top:${e.clientY-rect.top-size/2}px`;
+    el.appendChild(r);r.addEventListener('animationend',()=>r.remove());
+  }
+
+  /* ── Bot open ── */
+  let lastBotTap=0;
+  function openBot(e){
+    const now=Date.now();
+    if(now-lastBotTap<1000)return;
+    lastBotTap=now;
+    haptic();
+    if(e)ripple(document.getElementById('banner-btn'),e);
+    window.open(BOT_URL,'_blank');
+  }
+
+  /* ── Chat Bubble ── */
+  function showBubble(){
+    if(bubbleClosed)return;
+    const nb=document.getElementById('noti-bubble');
+    document.getElementById('nb-text').textContent=BUBBLE_MSGS[msgIdx];
+    nb.classList.add('show');
+    cycleTimer=setTimeout(()=>{
+      nb.classList.remove('show');
+      setTimeout(()=>{
+        msgIdx=(msgIdx+1)%BUBBLE_MSGS.length;
+        setTimeout(showBubble,msgIdx===0?600_000:4500);
+      },500);
+    },5500);
+  }
+  function closeBubble(e){
+    e.stopPropagation();clearTimeout(cycleTimer);bubbleClosed=true;
+    document.getElementById('noti-bubble').classList.remove('show');
+  }
+
+  /* ── Prevent body bounce ── */
+  document.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+</script>
+</body>
+</html>
